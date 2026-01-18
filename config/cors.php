@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Cross-Origin Resource Sharing (CORS) Configuration
@@ -19,7 +18,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:3000' ,'https://backend.shahid3qar.com','https://shahid3qar.com','https://backend.shahid3qar.com/'],
+    'allowed_origins' => ['http://localhost:3000', 'https://shahid3qar.com', 'https://www.shahid3qar.com', 'https://backend.shahid3qar.com'],
 
     'allowed_origins_patterns' => [],
 
@@ -30,5 +29,4 @@ return [
     'max_age' => 0,
 
     'supports_credentials' => true,
-
 ];
