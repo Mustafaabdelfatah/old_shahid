@@ -19,6 +19,40 @@ class UnitController extends Controller
     {
         try {
             $perPage = $request->input('per_page', 10); // Default per page is 10
+
+            // Map URL parameters to filter parameters for better compatibility
+            $filters = $request->query();
+
+            if (isset($filters['search'])) {
+                $filters['filter_search'] = $filters['search'];
+                unset($filters['search']);
+            }
+
+            // Map 'min_space' to 'size_min'
+            if (isset($filters['min_space'])) {
+                $filters['size_min'] = $filters['min_space'];
+                unset($filters['min_space']);
+            }
+
+            // Map 'finishing' to 'Finishing_type'
+            if (isset($filters['finishing'])) {
+                $filters['Finishing_type'] = $filters['finishing'];
+                unset($filters['finishing']);
+            }
+
+            // Fix sort parameter typo
+            if (isset($filters['sort']) && $filters['sort'] === 'heigh-to-low') {
+                $filters['sort'] = 'high-to-low';
+            }
+
+            // Handle category=0 to show all categories
+            if (isset($filters['category']) && $filters['category'] == '0') {
+                unset($filters['category']);
+            } elseif (isset($filters['category'])) {
+                $filters['category_id'] = $filters['category'];
+                unset($filters['category']);
+            }
+
             $units = Product::query()
                 ->with([
                     'trans', 'category', 'country', 'state', 'city',
@@ -26,7 +60,7 @@ class UnitController extends Controller
                     'viewproducts', 'wishlists', 'user' ,'admin'
                 ])
                 ->active(1)
-                ->filter($request->query())
+                ->filter($filters)
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 

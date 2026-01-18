@@ -280,19 +280,31 @@ class Product extends Model
         // Fawry filtering
         $builder->when(isset($filters['fawry']), fn($query) => $query->where('fawry', $filters['fawry']));
 
-        // Space and size filtering
+        // Space and size filtering - improved to handle min_space parameter
         $builder->when($filters['space'] ?? false, fn($query, $value) => $query->where('size', 'like', "%{$value}%"));
         $builder->when($filters['size_min'] ?? false, fn($query, $value) => $query->where('size', '>=', $value));
         $builder->when($filters['size_max'] ?? false, fn($query, $value) => $query->where('size', '<=', $value));
+        // Handle min_space as alias for size_min
+        $builder->when($filters['min_space'] ?? false, fn($query, $value) => $query->where('size', '>=', $value));
 
-        // Rooms and bathroom filtering
-        $builder->when($filters['rooms'] ?? false, fn($query, $value) => $query->where('rooms', 'like', "%{$value}%"));
-        $builder->when($filters['bathroom'] ?? false, fn($query, $value) => $query->where('bathroom', 'like', "%{$value}%"));
+        // Rooms and bathroom filtering - improved to handle exact matches
+        $builder->when($filters['rooms'] ?? false, function ($query, $value) {
+            if (is_numeric($value)) {
+                return $query->where('rooms', '=', $value);
+            }
+            return $query->where('rooms', 'like', "%{$value}%");
+        });
+        $builder->when($filters['bathroom'] ?? false, function ($query, $value) {
+            if (is_numeric($value)) {
+                return $query->where('bathroom', '=', $value);
+            }
+            return $query->where('bathroom', 'like', "%{$value}%");
+        });
 
         // Code, location, and type filtering
         $builder->when($filters['code'] ?? false, fn($query, $value) => $query->where('code', 'like', "%{$value}%"));
         $builder->when($filters['location'] ?? false, fn($query, $value) => $query->where('location', 'like', "%{$value}%"));
-        $builder->when($filters['type'] ?? false, fn($query, $value) => $query->where('type', 'like', "%{$value}%"));
+        $builder->when($filters['type'] ?? false, fn($query, $value) => $query->where('type', '=', $value));
         $builder->when($filters['building_number'] ?? false, fn($query, $value) => $query->where('building_number', 'like', "%{$value}%"));
 
         // Status, finance, and approval status filtering
@@ -310,22 +322,16 @@ class Product extends Model
         $builder->when($filters['monthly_installment_max'] ?? false, fn($query, $value) => $query->whereHas('installments', fn($q) => $q->where('monthly_installment', '<=', $value)));
 
         // Enum filters (main category, finishing type, furnished status)
-        $builder->when($filters['main_category'] ?? false, fn($query, $value) => $query->where('main_category', (array) $value));
-        $builder->when($filters['Furnished'] ?? false, fn($query, $value) => $query->where('Furnished', (array) $value));
+        $builder->when($filters['main_category'] ?? false, fn($query, $value) => $query->where('main_category', is_array($value) ? $value : [$value]));
+        $builder->when($filters['Furnished'] ?? false, fn($query, $value) => $query->where('Furnished', is_array($value) ? $value : [$value]));
         $builder->when($filters['Finishing_type'] ?? false, function ($query, $value) {
-            // التأكد من أن القيمة هي مصفوفة، وإلا تحويلها إلى مصفوفة
-            $values = is_array($value) ? $value : [$value];
+             $values = is_array($value) ? $value : [$value];
             return $query->whereIn('Finishing_type', $values);
         });
-        // rooms
-        $builder->when($filters['rooms'] ?? false, function ($query, $value) {
+        // Handle finishing as alias for Finishing_type
+        $builder->when($filters['finishing'] ?? false, function ($query, $value) {
             $values = is_array($value) ? $value : [$value];
-            return $query->whereIn('rooms', $values);
-        });
-        // bathrooms
-        $builder->when($filters['bathroom'] ?? false, function ($query, $value) {
-            $values = is_array($value) ? $value : [$value];
-            return $query->whereIn('bathroom', $values);
+            return $query->whereIn('Finishing_type', $values);
         });
 
         // Category, gates, district, and city filtering with relationships
@@ -353,12 +359,17 @@ class Product extends Model
             });
         });
 
-        // Sort order
+        // Sort order - improved to handle more variations
         $builder->when($filters['sort'] ?? false, function ($query, $value) {
-            if ($value === 'low-to-high') {
+            $value = strtolower($value);
+            if ($value === 'low-to-high' || $value === 'asc') {
                 $query->orderBy('price', 'asc');
-            } elseif ($value === 'high-to-low') {
+            } elseif ($value === 'high-to-low' || $value === 'desc') {
                 $query->orderBy('price', 'desc');
+            } elseif ($value === 'newest') {
+                $query->orderBy('created_at', 'desc');
+            } elseif ($value === 'oldest') {
+                $query->orderBy('created_at', 'asc');
             }
         });
     }
