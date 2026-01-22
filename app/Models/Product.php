@@ -263,8 +263,8 @@ class Product extends Model
     public function scopeFilter(Builder $builder, $filters)
     {
         // Price filtering & paying &primum
-        $builder->when($filters['price_min'] ?? false, fn($query, $value) => $query->where('price', '>=', $value));
-        $builder->when($filters['price_max'] ?? false, fn($query, $value) => $query->where('price', '<=', $value));
+        $builder->when($filters['min_price'] ?? false, fn($query, $value) => $query->where('price', '>=', $value));
+        $builder->when($filters['max_price'] ?? false, fn($query, $value) => $query->where('price', '<=', $value));
         $builder->when($filters['price'] ?? false, fn($query, $value) => $query->where('price', 'like', "%{$value}%"));
         $builder->when($filters['paying'] ?? false, fn($query, $value) => $query->where('paying', 'like', "%{$value}%"));
         $builder->when($filters['primum'] ?? false, fn($query, $value) => $query->where('primum', 'like', "%{$value}%"));
